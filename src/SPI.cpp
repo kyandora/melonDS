@@ -16,6 +16,7 @@
     with melonDS. If not, see http://www.gnu.org/licenses/.
 */
 
+#include <iconv.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -155,11 +156,16 @@ void LoadFirmwareFromFile(FILE* f)
 }
 
 void LoadUserSettingsFromConfig() {
+    iconv_t UTF8ToUTF16LE = iconv_open("UTF-16LE", "UTF-8");
+    
     // setting up username
     std::string username(Config::FirmwareUsername);
-    std::u16string u16Username(username.begin(), username.end());
-    size_t usernameLength = std::min(u16Username.length(), (size_t) 10);
-    memcpy(Firmware + UserSettings + 0x06, u16Username.data(), usernameLength * sizeof(char16_t));
+    char* usernameUTF8 = (char *)username.data();
+    size_t usernameUTF8Size = username.size();
+    wchar_t* usernameUTF16 = (wchar_t *)&Firmware[UserSettings + 0x06];
+    size_t usernameUTF16Size = 20;
+    iconv(UTF8ToUTF16LE, &usernameUTF8, &usernameUTF8Size, (char **)&usernameUTF16, &usernameUTF16Size);
+    size_t usernameLength = std::min(username.length(), (size_t) 10);
     Firmware[UserSettings+0x1A] = usernameLength;
 
     // setting language
@@ -174,9 +180,12 @@ void LoadUserSettingsFromConfig() {
 
     // setup message
     std::string message(Config::FirmwareMessage);
-    std::u16string u16message(message.begin(), message.end());
-    size_t messageLength = std::min(u16message.length(), (size_t) 26);
-    memcpy(Firmware + UserSettings + 0x1C, u16message.data(), messageLength * sizeof(char16_t));
+    char* messageUTF8 = (char *)message.data();
+    size_t messageUTF8Size = message.size();
+    wchar_t* messageUTF16 = (wchar_t *)&Firmware[UserSettings + 0x1C];
+    size_t messageUTF16Size = 52;
+    iconv(UTF8ToUTF16LE, &messageUTF8, &messageUTF8Size, (char **)&messageUTF16, &messageUTF16Size);
+    size_t messageLength = std::min(message.length(), (size_t) 26);
     Firmware[UserSettings+0x50] = messageLength;
 }
 
