@@ -25,7 +25,7 @@
 namespace GPU3D
 {
 
-typedef struct
+struct Vertex
 {
     s32 Position[4];
     s32 Color[3];
@@ -43,9 +43,9 @@ typedef struct
     // TODO maybe: hi-res color? (that survives clipping)
     s32 HiresPosition[2];
 
-} Vertex;
+};
 
-typedef struct
+struct Polygon
 {
     Vertex* Vertices[10];
     u32 NumVertices;
@@ -74,7 +74,7 @@ typedef struct
 
     u32 SortKey;
 
-} Polygon;
+};
 
 extern u32 RenderDispCnt;
 extern u8 RenderAlphaRef;
@@ -86,6 +86,10 @@ extern u32 RenderFogColor, RenderFogOffset, RenderFogShift;
 extern u8 RenderFogDensityTable[34];
 
 extern u32 RenderClearAttr1, RenderClearAttr2;
+
+extern bool RenderFrameIdentical;
+
+extern u16 RenderXPos;
 
 extern std::array<Polygon*,2048> RenderPolygonRAM;
 extern u32 RenderNumPolygons;
@@ -112,6 +116,10 @@ void CheckFIFODMA();
 void VCount144();
 void VBlank();
 void VCount215();
+
+void RestartFrame();
+
+void SetRenderXPos(u16 xpos);
 u32* GetLine(int line);
 
 void WriteToGXFIFO(u32 val);

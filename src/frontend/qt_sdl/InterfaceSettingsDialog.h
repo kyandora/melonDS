@@ -1,5 +1,5 @@
 /*
-    Copyright 2016-2020 Arisotura
+    Copyright 2016-2021 Arisotura, WaluigiWare64
 
     This file is part of melonDS.
 
@@ -16,24 +16,24 @@
     with melonDS. If not, see http://www.gnu.org/licenses/.
 */
 
-#ifndef WIFISETTINGSDIALOG_H
-#define WIFISETTINGSDIALOG_H
+#ifndef INTERFACESETTINGSDIALOG_H
+#define INTERFACESETTINGSDIALOG_H
 
 #include <QDialog>
 
-namespace Ui { class WifiSettingsDialog; }
-class WifiSettingsDialog;
+namespace Ui { class InterfaceSettingsDialog; }
+class InterfaceSettingsDialog;
 
-class WifiSettingsDialog : public QDialog
+class InterfaceSettingsDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit WifiSettingsDialog(QWidget* parent);
-    ~WifiSettingsDialog();
+    explicit InterfaceSettingsDialog(QWidget* parent);
+    ~InterfaceSettingsDialog();
 
-    static WifiSettingsDialog* currentDlg;
-    static WifiSettingsDialog* openDlg(QWidget* parent)
+    static InterfaceSettingsDialog* currentDlg;
+    static InterfaceSettingsDialog* openDlg(QWidget* parent)
     {
         if (currentDlg)
         {
@@ -41,7 +41,7 @@ public:
             return currentDlg;
         }
 
-        currentDlg = new WifiSettingsDialog(parent);
+        currentDlg = new InterfaceSettingsDialog(parent);
         currentDlg->open();
         return currentDlg;
     }
@@ -50,21 +50,16 @@ public:
         currentDlg = nullptr;
     }
 
-    static bool needsReset;
+signals:
+    void updateMouseTimer();
 
 private slots:
     void done(int r);
 
-    void on_rbDirectMode_clicked();
-    void on_rbIndirectMode_clicked();
-    void on_cbxDirectAdapter_currentIndexChanged(int sel);
+    void on_cbMouseHide_clicked();
 
 private:
-    Ui::WifiSettingsDialog* ui;
-
-    bool haspcap;
-
-    void updateAdapterControls();
+    Ui::InterfaceSettingsDialog* ui;
 };
 
-#endif // WIFISETTINGSDIALOG_H
+#endif // INTERFACESETTINGSDIALOG_H
