@@ -5,6 +5,7 @@ namespace Config
 {
 
 extern int ConsoleType;
+extern int Slot2Addon;
 extern int DirectBoot;
 extern int SavestateRelocSRAM;
 
