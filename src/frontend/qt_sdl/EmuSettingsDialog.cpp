@@ -48,6 +48,7 @@ EmuSettingsDialog::EmuSettingsDialog(QWidget* parent) : QDialog(parent), ui(new 
     ui->txtBIOS9Path->setText(Config::BIOS9Path);
     ui->txtBIOS7Path->setText(Config::BIOS7Path);
     ui->txtFirmwarePath->setText(Config::FirmwarePath);
+    ui->txtGBAPath->setText(Config::GBAPath);
     ui->cbDLDIEnable->setChecked(Config::DLDIEnable != 0);
     ui->txtDLDISDPath->setText(Config::DLDISDPath);
 
@@ -65,6 +66,7 @@ EmuSettingsDialog::EmuSettingsDialog(QWidget* parent) : QDialog(parent), ui(new 
     ui->chkDirectBoot->setChecked(Config::DirectBoot != 0);
     
     ui->cbxSlot2Addon->addItem("None");
+    ui->cbxSlot2Addon->addItem("Game Pak");
     ui->cbxSlot2Addon->addItem("Rumble Pak");
     ui->cbxSlot2Addon->addItem("Guitar Grip");
     ui->cbxSlot2Addon->addItem("Memory Expansion Pak");
@@ -160,6 +162,7 @@ void EmuSettingsDialog::done(int r)
         std::string bios9Path = ui->txtBIOS9Path->text().toStdString();
         std::string bios7Path = ui->txtBIOS7Path->text().toStdString();
         std::string firmwarePath = ui->txtFirmwarePath->text().toStdString();
+        std::string gbaPath = ui->txtGBAPath->text().toStdString();
         int dldiEnable = ui->cbDLDIEnable->isChecked() ? 1:0;
         std::string dldiSDPath = ui->txtDLDISDPath->text().toStdString();
         std::string dsiBios9Path = ui->txtDSiBIOS9Path->text().toStdString();
@@ -182,6 +185,7 @@ void EmuSettingsDialog::done(int r)
             || strcmp(Config::BIOS9Path, bios9Path.c_str()) != 0
             || strcmp(Config::BIOS7Path, bios7Path.c_str()) != 0
             || strcmp(Config::FirmwarePath, firmwarePath.c_str()) != 0
+            || strcmp(Config::GBAPath, gbaPath.c_str()) != 0
             || dldiEnable != Config::DLDIEnable
             || strcmp(Config::DLDISDPath, dldiSDPath.c_str()) != 0
             || strcmp(Config::DSiBIOS9Path, dsiBios9Path.c_str()) != 0
@@ -200,6 +204,7 @@ void EmuSettingsDialog::done(int r)
             strncpy(Config::BIOS9Path, bios9Path.c_str(), 1023); Config::BIOS9Path[1023] = '\0';
             strncpy(Config::BIOS7Path, bios7Path.c_str(), 1023); Config::BIOS7Path[1023] = '\0';
             strncpy(Config::FirmwarePath, firmwarePath.c_str(), 1023); Config::FirmwarePath[1023] = '\0';
+            strncpy(Config::GBAPath, gbaPath.c_str(), 1023); Config::GBAPath[1023] = '\0';
             Config::DLDIEnable = dldiEnable;
             strncpy(Config::DLDISDPath, dldiSDPath.c_str(), 1023); Config::DLDISDPath[1023] = '\0';
 
@@ -222,7 +227,6 @@ void EmuSettingsDialog::done(int r)
             Config::DirectBoot = directBoot;
             
             Config::Slot2Addon = chosenAddon;
-            NDS::SetSlot2Addon(Config::Slot2Addon);
 
             Config::Save();
 

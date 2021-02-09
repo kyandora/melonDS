@@ -36,24 +36,24 @@ void WriteRumble(u32 addr, u16 val);
 }
 
 
-enum class GuitarKeys : int
+/*enum class GuitarKeys : int
 {
     Green = 0x40,
     Red = 0x20,
     Yellow = 0x10,
     Blue = 0x08,
-};
+};*/
 
 namespace Slot2Cart_GuitarGrip
 {
 
 extern bool GuitarGripEnabled;
-extern u8 GuitarKeyStatus;
+/*extern u8 GuitarKeyStatus;
 
 u8 ReadGrip8(u32 addr);
 u16 ReadGrip16(u32 addr);
 
-void SetGripKey(GuitarKeys key, bool val);
+void SetGripKey(GuitarKeys key, bool val);*/
 
 }
 

@@ -700,6 +700,7 @@ void RelocateSave(const char* path, bool write)
 // referenced from mGBA
 void WriteGPIO(u32 addr, u16 val)
 {
+    printf("Unknown GBA GPIO write 0x%02X @ 0x%04X\n", val, addr);
     switch (addr)
     {
         case 0xC4:
@@ -714,7 +715,8 @@ void WriteGPIO(u32 addr, u16 val)
             CartGPIO.control = val;
             break;
         default:
-            printf("Unknown GBA GPIO write 0x%02X @ 0x%04X\n", val, addr);
+            //printf("Unknown GBA GPIO write 0x%02X @ 0x%04X\n", val, addr);
+            break;
     }
 
     // write the GPIO values in the ROM (if writable)

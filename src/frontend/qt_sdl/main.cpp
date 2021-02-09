@@ -67,7 +67,7 @@
 
 #include "NDS.h"
 #include "GBACart.h"
-#include "Slot2Cart.h"
+#include "Slot2.hpp"
 #ifdef OGLRENDERER_ENABLED
 #include "OpenGLSupport.h"
 #endif
@@ -416,12 +416,17 @@ void EmuThread::run()
             }
         }
         
-        if (Slot2Cart_GuitarGrip::GuitarGripEnabled)
+        //if (Slot2Cart_GuitarGrip::GuitarGripEnabled)
+        if ((NDS::Slot2) && (typeid(*NDS::Slot2.get()) == typeid(GuitarGrip)))
         {
-            Slot2Cart_GuitarGrip::SetGripKey(GuitarKeys::Green, Input::HotkeyDown(HK_GuitarGripGreen));
-            Slot2Cart_GuitarGrip::SetGripKey(GuitarKeys::Red, Input::HotkeyDown(HK_GuitarGripRed));
-            Slot2Cart_GuitarGrip::SetGripKey(GuitarKeys::Yellow, Input::HotkeyDown(HK_GuitarGripYellow));
-            Slot2Cart_GuitarGrip::SetGripKey(GuitarKeys::Blue, Input::HotkeyDown(HK_GuitarGripBlue));
+            static_cast<GuitarGrip*>(NDS::Slot2.get())->SetGripKey(GuitarKeys::Green, Input::HotkeyDown(HK_GuitarGripGreen));
+            static_cast<GuitarGrip*>(NDS::Slot2.get())->SetGripKey(GuitarKeys::Red, Input::HotkeyDown(HK_GuitarGripRed));
+            static_cast<GuitarGrip*>(NDS::Slot2.get())->SetGripKey(GuitarKeys::Yellow, Input::HotkeyDown(HK_GuitarGripYellow));
+            static_cast<GuitarGrip*>(NDS::Slot2.get())->SetGripKey(GuitarKeys::Blue, Input::HotkeyDown(HK_GuitarGripBlue));
+            //Slot2Cart_GuitarGrip::SetGripKey(GuitarKeys::Green, Input::HotkeyDown(HK_GuitarGripGreen));
+            //Slot2Cart_GuitarGrip::SetGripKey(GuitarKeys::Red, Input::HotkeyDown(HK_GuitarGripRed));
+            //Slot2Cart_GuitarGrip::SetGripKey(GuitarKeys::Yellow, Input::HotkeyDown(HK_GuitarGripYellow));
+            //Slot2Cart_GuitarGrip::SetGripKey(GuitarKeys::Blue, Input::HotkeyDown(HK_GuitarGripBlue));
         }
 
         if (EmuRunning == 1)
@@ -1553,7 +1558,8 @@ void MainWindow::dragEnterEvent(QDragEnterEvent* event)
     QString filename = urls.at(0).toLocalFile();
 
     QStringList acceptedExts{".nds", ".srl", ".dsi", ".gba", ".rar",
-                             ".zip", ".7z", ".tar", ".tar.gz", ".tar.xz", ".tar.bz2"};
+                             ".zip", ".7z", ".tar", ".tar.gz", ".tar.xz", ".tar.bz2",
+                             ".hcv"};
 
     for(const QString &ext : acceptedExts)
     {
@@ -1588,14 +1594,14 @@ void MainWindow::dropEvent(QDropEvent* event)
         slot = 1;
         res = Frontend::LoadROM(_filename, Frontend::ROMSlot_GBA);
     }
-    else if (mime == "text/plain")
+    else if ((ext == "hcv") && (NDS::Slot2) && (typeid(*NDS::Slot2.get()) == typeid(SegaCardReader)))
     {
         if(!filename.isEmpty())
         {
             QFile hcvfile(filename);
             if(!hcvfile.open(QIODevice::ReadOnly))return;
             QTextStream hcvstream(&hcvfile);
-            Slot2Cart_SegaCardReader::Load(hcvstream.read(16).toStdString());
+            static_cast<SegaCardReader*>(NDS::Slot2.get())->Scan(hcvstream.read(16).toStdString());
         }
     }
     else if(ext == "nds" || ext == "srl" || ext == "dsi")

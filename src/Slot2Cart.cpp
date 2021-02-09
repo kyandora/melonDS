@@ -1,3 +1,55 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
     Copyright 2019 Arisotura, Buenia0
 
@@ -60,7 +112,7 @@ namespace Slot2Cart_GuitarGrip
 // Code ported from Desmume
 
 bool GuitarGripEnabled = false;
-u8 GuitarKeyStatus = 0x00;
+/*u8 GuitarKeyStatus = 0x00;
 
 u8 ReadGrip8(u32 addr)
 {
@@ -87,7 +139,7 @@ void SetGripKey(GuitarKeys key, bool val)
     {
         GuitarKeyStatus &= ~static_cast<int>(key);
     }
-}
+}*/
 
 }
 

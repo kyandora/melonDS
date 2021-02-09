@@ -32,7 +32,7 @@
 #include "Wifi.h"
 #include "AREngine.h"
 #include "Platform.h"
-#include "Slot2Cart.h"
+#include "Slot2.hpp"
 #include "NDSCart_SRAMManager.h"
 
 #ifdef JIT_ENABLED
@@ -171,6 +171,7 @@ void RunTimer(u32 tid, s32 cycles);
 void SetWifiWaitCnt(u16 val);
 void SetGBASlotTimings();
 
+std::unique_ptr<Slot2Cartridge> Slot2;
 
 bool Init()
 {
@@ -599,6 +600,19 @@ void Reset()
     }
 
     AREngine::Reset();
+    
+    if (ConsoleType == 0)
+    {
+        switch (Config::Slot2Addon) {
+            case 1: Slot2 = std::make_unique<GamePak>(); break;
+            case 2: Slot2 = std::make_unique<RumblePak>(); break;
+            case 3: Slot2 = std::make_unique<GuitarGrip>(); break;
+            case 4: Slot2 = std::make_unique<MemoryExpansionPak>(); break;
+            case 5: Slot2 = std::make_unique<SegaCardReader>(); break;
+            default: Slot2.reset();
+        }
+    }
+    else Slot2.reset();
 }
 
 void Stop()
@@ -608,6 +622,8 @@ void Stop()
     Platform::StopEmu();
     GPU::Stop();
     SPU::Stop();
+    
+    Slot2.reset();
 }
 
 bool DoSavestate_Scheduler(Savestate* file)
@@ -810,10 +826,10 @@ bool DoSavestate(Savestate* file)
     RTC::DoSavestate(file);
     Wifi::DoSavestate(file);
     
-    if (Slot2Cart_MemExpansionPak::MemPakEnabled)
+    /*if (Slot2Cart_MemExpansionPak::MemPakEnabled)
     {
         Slot2Cart_MemExpansionPak::DoSavestate(file);
-    }
+    }*/
 
     if (!file->Saving)
     {
@@ -834,14 +850,6 @@ bool DoSavestate(Savestate* file)
 void SetConsoleType(int type)
 {
     ConsoleType = type;
-}
-
-void SetSlot2Addon(int type)
-{
-    Slot2Cart_RumblePak::RumblePakEnabled = (type == 1);
-    Slot2Cart_GuitarGrip::GuitarGripEnabled = (type == 2);
-    Slot2Cart_MemExpansionPak::MemPakEnabled = (type == 3);
-    Slot2Cart_SegaCardReader::Enabled = (type == 4);
 }
   
 bool LoadROM(const u8* romdata, u32 filelength, const char *sram, bool direct)
@@ -1954,39 +1962,10 @@ u8 ARM9Read8(u32 addr)
 
     case 0x08000000:
     case 0x09000000:
-        if (ExMemCnt[0] & (1<<7)) return 0x00; // deselected CPU is 00h-filled
-        if (GBACart::CartInserted)
-        {
-            return *(u8*)&GBACart::CartROM[addr & (GBACart::CartROMSize-1)];
-        }
-        else if (Slot2Cart_GuitarGrip::GuitarGripEnabled)
-        {
-            return Slot2Cart_GuitarGrip::ReadGrip8(addr);
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            return Slot2Cart_MemExpansionPak::ReadMemPak8(addr);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Read8(addr);
-
-        return 0xFF; // TODO: proper open bus
-
     case 0x0A000000:
         if (ExMemCnt[0] & (1<<7)) return 0x00; // deselected CPU is 00h-filled
-        if (GBACart::CartInserted)
-        {
-            return GBACart_SRAM::Read8(addr & (GBACart_SRAM::SRAMLength-1));
-        }
-        else if (Slot2Cart_GuitarGrip::GuitarGripEnabled)
-        {
-            return Slot2Cart_GuitarGrip::ReadGrip8(addr);
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            return Slot2Cart_MemExpansionPak::ReadMemPak8(addr);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Read8(addr);
-        
+        if ((ConsoleType == 0) && (Slot2)) return Slot2->Read8(addr);
+
         return 0xFF; // TODO: proper open bus
     }
 
@@ -2039,42 +2018,10 @@ u16 ARM9Read16(u32 addr)
 
     case 0x08000000:
     case 0x09000000:
-        if (ExMemCnt[0] & (1<<7)) return 0x0000; // deselected CPU is 00h-filled
-        if (GBACart::CartInserted)
-        {
-            return *(u16*)&GBACart::CartROM[addr & (GBACart::CartROMSize-1)];
-        }
-        
-        if (Slot2Cart_RumblePak::RumblePakEnabled)
-        {
-            return Slot2Cart_RumblePak::ReadRumble(addr);
-        }
-        
-        if (Slot2Cart_GuitarGrip::GuitarGripEnabled)
-        {
-            return Slot2Cart_GuitarGrip::ReadGrip16(addr);
-        }
-        
-        if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            return Slot2Cart_MemExpansionPak::ReadMemPak16(addr);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Read16(addr);
-        
-        return 0xFFFF; // TODO: proper open bus
-
     case 0x0A000000:
         if (ExMemCnt[0] & (1<<7)) return 0x0000; // deselected CPU is 00h-filled
-        if (GBACart::CartInserted)
-        {
-            return GBACart_SRAM::Read16(addr & (GBACart_SRAM::SRAMLength-1));
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            return Slot2Cart_MemExpansionPak::ReadMemPak16(addr);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Read16(addr);
-
+        if ((ConsoleType == 0) && (Slot2)) return Slot2->Read16(addr);
+        
         return 0xFFFF; // TODO: proper open bus
     }
 
@@ -2127,30 +2074,9 @@ u32 ARM9Read32(u32 addr)
 
     case 0x08000000:
     case 0x09000000:
-        if (ExMemCnt[0] & (1<<7)) return 0x00000000; // deselected CPU is 00h-filled
-        if (GBACart::CartInserted)
-        {
-            return *(u32*)&GBACart::CartROM[addr & (GBACart::CartROMSize-1)];
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            return Slot2Cart_MemExpansionPak::ReadMemPak32(addr);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Read32(addr);
-        
-        return 0xFFFFFFFF; // TODO: proper open bus
-
     case 0x0A000000:
         if (ExMemCnt[0] & (1<<7)) return 0x00000000; // deselected CPU is 00h-filled
-        if (GBACart::CartInserted)
-        {
-            return GBACart_SRAM::Read32(addr & (GBACart_SRAM::SRAMLength-1));
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            return Slot2Cart_MemExpansionPak::ReadMemPak32(addr);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Read32(addr);
+        if ((ConsoleType == 0) && (Slot2)) return Slot2->Read32(addr);
         
         return 0xFFFFFFFF; // TODO: proper open bus
     }
@@ -2192,34 +2118,11 @@ void ARM9Write8(u32 addr, u8 val)
 
     case 0x08000000:
     case 0x09000000:
-        if (ExMemCnt[0] & (1<<7)) return; // deselected CPU, skip the write
-        if (GBACart::CartInserted)
-        {
-            if ((addr & 0x00FFFFFF) >= 0xC4 && (addr & 0x00FFFFFF) <= 0xC9)
-            {
-                GBACart::WriteGPIO(addr & (GBACart::CartROMSize-1), val);
-                return;
-            }
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            Slot2Cart_MemExpansionPak::WriteMemPak8(addr, val);
-        }
-        
-        break;
-
     case 0x0A000000:
         if (ExMemCnt[0] & (1<<7)) return; // deselected CPU, skip the write
-        if (GBACart::CartInserted)
-        {
-            GBACart_SRAM::Write8(addr & (GBACart_SRAM::SRAMLength-1), val);
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            Slot2Cart_MemExpansionPak::WriteMemPak8(addr, val);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Write8(addr, val);
-
+        if ((ConsoleType == 0) && (Slot2)) Slot2->Write8(addr, val);
+        
+        //break;
         return;
     }
 
@@ -2276,39 +2179,11 @@ void ARM9Write16(u32 addr, u16 val)
 
     case 0x08000000:
     case 0x09000000:
-        if (ExMemCnt[0] & (1<<7)) return; // deselected CPU, skip the write
-        if (GBACart::CartInserted)
-        {
-            // Note: the lower bound is adjusted such that a write starting
-            // there will hit the first byte of the GPIO region.
-            if ((addr & 0x00FFFFFF) >= 0xC3 && (addr & 0x00FFFFFF) <= 0xC9)
-            {
-                GBACart::WriteGPIO(addr & (GBACart::CartROMSize-1), val);
-                return;
-            }
-        }
-        else if (Slot2Cart_RumblePak::RumblePakEnabled)
-        {
-            Slot2Cart_RumblePak::WriteRumble(addr, val);
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            Slot2Cart_MemExpansionPak::WriteMemPak16(addr, val);
-        }
-        
-        break;
-
     case 0x0A000000:
         if (ExMemCnt[0] & (1<<7)) return; // deselected CPU, skip the write
-        if (GBACart::CartInserted)
-        {
-            GBACart_SRAM::Write16(addr & (GBACart_SRAM::SRAMLength-1), val);
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            Slot2Cart_MemExpansionPak::WriteMemPak16(addr, val);
-        }
+        if ((ConsoleType == 0) && (Slot2)) Slot2->Write16(addr, val);
         
+        //break;
         return;
     }
 
@@ -2365,36 +2240,11 @@ void ARM9Write32(u32 addr, u32 val)
 
     case 0x08000000:
     case 0x09000000:
-        if (ExMemCnt[0] & (1<<7)) return; // deselected CPU, skip the write
-        if (GBACart::CartInserted)
-        {
-            // Note: the lower bound is adjusted such that a write starting
-            // there will hit the first byte of the GPIO region.
-            if ((addr & 0x00FFFFFF) >= 0xC1 && (addr & 0x00FFFFFF) <= 0xC9)
-            {
-                GBACart::WriteGPIO(addr & (GBACart::CartROMSize-1), val & 0xFF);
-                GBACart::WriteGPIO((addr + 2) & (GBACart::CartROMSize-1), (val >> 16) & 0xFF);
-                return;
-            }
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            Slot2Cart_MemExpansionPak::WriteMemPak32(addr, val);
-        }
-        
-        break;
-
     case 0x0A000000:
         if (ExMemCnt[0] & (1<<7)) return; // deselected CPU, skip the write
-        if (GBACart::CartInserted)
-        {
-            GBACart_SRAM::Write32(addr & (GBACart_SRAM::SRAMLength-1), val);
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            Slot2Cart_MemExpansionPak::WriteMemPak32(addr, val);
-        }
+        if ((ConsoleType == 0) && (Slot2)) Slot2->Write32(addr, val);
         
+        //break;
         return;
     }
 
@@ -2474,35 +2324,10 @@ u8 ARM7Read8(u32 addr)
 
     case 0x08000000:
     case 0x09000000:
-        if (!(ExMemCnt[0] & (1<<7))) return 0x00; // deselected CPU is 00h-filled
-        if (GBACart::CartInserted)
-        {
-            return *(u8*)&GBACart::CartROM[addr & (GBACart::CartROMSize-1)];
-        }
-        else if (Slot2Cart_GuitarGrip::GuitarGripEnabled)
-        {
-            return Slot2Cart_GuitarGrip::ReadGrip8(addr);
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            return Slot2Cart_MemExpansionPak::ReadMemPak8(addr);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Read8(addr);
-
-        return 0xFF; // TODO: proper open bus
-
     case 0x0A000000:
         if (!(ExMemCnt[0] & (1<<7))) return 0x00; // deselected CPU is 00h-filled
-        if (GBACart::CartInserted)
-        {
-            return GBACart_SRAM::Read8(addr & (GBACart_SRAM::SRAMLength-1));
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            return Slot2Cart_MemExpansionPak::ReadMemPak8(addr);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Read8(addr);
-        
+        if ((ConsoleType == 0) && (Slot2)) return Slot2->Read8(addr);
+
         return 0xFF; // TODO: proper open bus
         
     }
@@ -2558,38 +2383,9 @@ u16 ARM7Read16(u32 addr)
 
     case 0x08000000:
     case 0x09000000:
-        if (!(ExMemCnt[0] & (1<<7))) return 0x0000; // deselected CPU is 00h-filled
-        if (GBACart::CartInserted)
-        {
-            return *(u16*)&GBACart::CartROM[addr & (GBACart::CartROMSize-1)];
-        }
-        else if (Slot2Cart_RumblePak::RumblePakEnabled)
-        {
-            return Slot2Cart_RumblePak::ReadRumble(addr);
-        }
-        else if (Slot2Cart_GuitarGrip::GuitarGripEnabled)
-        {
-            return Slot2Cart_GuitarGrip::ReadGrip16(addr);
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            return Slot2Cart_MemExpansionPak::ReadMemPak16(addr);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Read16(addr);
-        
-        return 0xFFFF; // TODO: proper open bus
-
     case 0x0A000000:
         if (!(ExMemCnt[0] & (1<<7))) return 0x0000; // deselected CPU is 00h-filled
-        if (GBACart::CartInserted)
-        {
-            return GBACart_SRAM::Read16(addr & (GBACart_SRAM::SRAMLength-1));
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            return Slot2Cart_MemExpansionPak::ReadMemPak16(addr);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Read16(addr);
+        if ((ConsoleType == 0) && (Slot2)) return Slot2->Read16(addr);
         
         return 0xFFFF; // TODO: proper open bus
     }
@@ -2645,30 +2441,9 @@ u32 ARM7Read32(u32 addr)
 
     case 0x08000000:
     case 0x09000000:
-        if (!(ExMemCnt[0] & (1<<7))) return 0x00000000; // deselected CPU is 00h-filled
-        if (GBACart::CartInserted)
-        {
-            return *(u32*)&GBACart::CartROM[addr & (GBACart::CartROMSize-1)];
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            return Slot2Cart_MemExpansionPak::ReadMemPak32(addr);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Read32(addr);
-        
-        return 0xFFFFFFFF; // TODO: proper open bus
-
     case 0x0A000000:
         if (!(ExMemCnt[0] & (1<<7))) return 0x00000000; // deselected CPU is 00h-filled
-        if (GBACart::CartInserted)
-        {
-            return GBACart_SRAM::Read32(addr & (GBACart_SRAM::SRAMLength-1));
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            return Slot2Cart_MemExpansionPak::ReadMemPak32(addr);
-        }
-        else if (Slot2Cart_SegaCardReader::Enabled) return Slot2Cart_SegaCardReader::Read32(addr);
+        if ((ConsoleType == 0) && (Slot2)) return Slot2->Read32(addr);
         
         return 0xFFFFFFFF; // TODO: proper open bus
     }
@@ -2728,33 +2503,11 @@ void ARM7Write8(u32 addr, u8 val)
 
     case 0x08000000:
     case 0x09000000:
-        if (!(ExMemCnt[0] & (1<<7))) return; // deselected CPU, skip the write
-        if (GBACart::CartInserted)
-        {
-            if ((addr & 0x00FFFFFF) >= 0xC4 && (addr & 0x00FFFFFF) <= 0xC9)
-            {
-                GBACart::WriteGPIO(addr & (GBACart::CartROMSize-1), val);
-                return;
-            }
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            Slot2Cart_MemExpansionPak::WriteMemPak8(addr, val);
-        }
-        
-        break;
-
     case 0x0A000000:
         if (!(ExMemCnt[0] & (1<<7))) return; // deselected CPU, skip the write
-        if (GBACart::CartInserted)
-        {
-            GBACart_SRAM::Write8(addr & (GBACart_SRAM::SRAMLength-1), val);
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            Slot2Cart_MemExpansionPak::WriteMemPak8(addr, val);
-        }
+        if ((ConsoleType == 0) && (Slot2)) Slot2->Write8(addr, val);
         
+        //break;
         return;
     }
 
@@ -2821,39 +2574,11 @@ void ARM7Write16(u32 addr, u16 val)
 
     case 0x08000000:
     case 0x09000000:
-        if (!(ExMemCnt[0] & (1<<7))) return; // deselected CPU, skip the write
-        if (GBACart::CartInserted)
-        {
-            // Note: the lower bound is adjusted such that a write starting
-            // there will hit the first byte of the GPIO region.
-            if ((addr & 0x00FFFFFF) >= 0xC3 && (addr & 0x00FFFFFF) <= 0xC9)
-            {
-                GBACart::WriteGPIO(addr & (GBACart::CartROMSize-1), val);
-                return;
-            }
-        }
-        else if (Slot2Cart_RumblePak::RumblePakEnabled)
-        {
-            Slot2Cart_RumblePak::WriteRumble(addr, val);
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            Slot2Cart_MemExpansionPak::WriteMemPak16(addr, val);
-        }
-        
-        break;
-
     case 0x0A000000:
         if (!(ExMemCnt[0] & (1<<7))) return; // deselected CPU, skip the write
-        if (GBACart::CartInserted)
-        {
-            GBACart_SRAM::Write16(addr & (GBACart_SRAM::SRAMLength-1), val);
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            Slot2Cart_MemExpansionPak::WriteMemPak16(addr, val);
-        }
+        if ((ConsoleType == 0) && (Slot2)) Slot2->Write16(addr, val);
         
+        //break;
         return;
     }
 
@@ -2920,36 +2645,11 @@ void ARM7Write32(u32 addr, u32 val)
 
     case 0x08000000:
     case 0x09000000:
-        if (!(ExMemCnt[0] & (1<<7))) return; // deselected CPU, skip the write
-        if (GBACart::CartInserted)
-        {
-            // Note: the lower bound is adjusted such that a write starting
-            // there will hit the first byte of the GPIO region.
-            if ((addr & 0x00FFFFFF) >= 0xC1 && (addr & 0x00FFFFFF) <= 0xC9)
-            {
-                GBACart::WriteGPIO(addr & (GBACart::CartROMSize-1), val & 0xFF);
-                GBACart::WriteGPIO((addr + 2) & (GBACart::CartROMSize-1), (val >> 16) & 0xFF);
-                return;
-            }
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            Slot2Cart_MemExpansionPak::WriteMemPak32(addr, val);
-        }
-        
-        break;
-
     case 0x0A000000:
         if (!(ExMemCnt[0] & (1<<7))) return; // deselected CPU, skip the write
-        if (GBACart::CartInserted)
-        {
-            GBACart_SRAM::Write32(addr & (GBACart_SRAM::SRAMLength-1), val);
-        }
-        else if (Slot2Cart_MemExpansionPak::MemPakEnabled)
-        {
-            Slot2Cart_MemExpansionPak::WriteMemPak32(addr, val);
-        }
+        if ((ConsoleType == 0) && (Slot2)) Slot2->Write32(addr, val);
         
+        //break;
         return;
     }
 

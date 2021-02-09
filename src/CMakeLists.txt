@@ -37,6 +37,11 @@ add_library(core STATIC
 	Platform.h
 	ROMList.h
 	RTC.cpp
+	Slot2.cpp
+	slot2/GuitarGrip.cpp
+	slot2/RumblePak.cpp
+	slot2/SegaCardReader.cpp
+	slot2/MemoryExpansionPak.cpp
 	Slot2Cart.cpp
 	Savestate.cpp
 	SPI.cpp

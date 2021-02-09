@@ -80,7 +80,6 @@ extern int AudioSync;
 extern int ShowOSD;
 
 extern int ConsoleType;
-extern int Slot2Addon;
 extern int DirectBoot;
 
 extern int SocketBindAnyAddr;

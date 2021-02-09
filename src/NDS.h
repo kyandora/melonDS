@@ -19,7 +19,9 @@
 #ifndef NDS_H
 #define NDS_H
 
+#include <memory>
 #include "Savestate.h"
+#include "Slot2.hpp"
 #include "types.h"
 
 // when touching the main loop/timing code, pls test a lot of shit
@@ -183,6 +185,8 @@ extern u32 KeyInput;
 const u32 ARM7WRAMSize = 0x10000;
 extern u8* ARM7WRAM;
 
+extern std::unique_ptr<Slot2Cartridge> Slot2;
+
 bool Init();
 void DeInit();
 void Reset();
@@ -195,9 +199,6 @@ void SetARM7RegionTimings(u32 addrstart, u32 addrend, int buswidth, int nonseq, 
 
 // 0=DS  1=DSi
 void SetConsoleType(int type);
-
-// 0=None 1=Rumble Pak 2=Guitar Grip
-void SetSlot2Addon(int type);
 
 bool LoadROM(const char* path, const char* sram, bool direct);
 bool LoadROM(const u8* romdata, u32 filelength, const char *sram, bool direct);
